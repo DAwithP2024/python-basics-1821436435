@@ -30,71 +30,81 @@ products = {
     ]
 }
 
+
 def display_sorted_products(products_list, sort_order):
-    if sort_order == 1:  # Ascending order
+    if sort_order == "asc":  # Ascending order
         sorted_products = sorted(products_list, key=lambda x: x[1])
-    elif sort_order == 2:  # Descending order
+    elif sort_order == "desc":  # Descending order
         sorted_products = sorted(products_list, key=lambda x: x[1], reverse=True)
-    else:
-        print("Invalid sort order. Displaying products as is.")
-        sorted_products = products_list
-    
-    # Display sorted products
-    for index, product in enumerate(sorted_products, start=1):
-        print(f"{index}. {product[0]} - ${product[1]}")
+    return sorted_products
+
 
 def display_products(products_list):
     for index, product in enumerate(products_list, start=1):
         print(f"{index}. {product[0]} - ${product[1]}")
 
+
 def display_categories():
     for index, category in enumerate(products.keys(), start=1):
         print(f"{index}. {category}")
+    
+    category_choice = input("Enter the number of the category: ")
+    try:
+        category_index = int(category_choice) - 1
+        if category_index < 0 or category_index >= len(products):
+            print("Invalid category number.")
+            return None
+        return category_index
+    except ValueError:
+        print("Invalid input. Please enter a numeric value.")
+        return None
+
 
 def add_to_cart(cart, product, quantity):
     cart.append((product[0], product[1], quantity))
 
+
 def display_cart(cart):
-    if not cart:
-        print("Your cart is empty.")
-    else:
-        print("Your Shopping Cart:")
-        total_cost = 0
+    total_cost = 0
+    if cart:
         for item in cart:
             product_name, price, quantity = item
-            total_cost += price * quantity
-            print(f"{product_name} - ${price} x {quantity}")
-        print(f"Total Cost: ${total_cost:.2f}")
+            cost = price * quantity
+            print(f"{product_name} - ${price} x {quantity} = ${cost}")
+            total_cost += cost
+        print(f"Total cost: ${total_cost}")
+    else:
+        print("Your cart is empty.")
+
 
 def generate_receipt(name, email, cart, total_cost, address):
-    if cart:
-        print(f"Name: {name}")
-        print(f"Email: {email}")
-        print("Products Purchased:")
-        for item in cart:
-            product_name, price, quantity = item
-            print(f"{product_name} - ${price} x {quantity}")
-        print(f"Total Cost: ${total_cost:.2f}")
-        print(f"Delivery Address: {address}")
-        print("Your items will be delivered in 3 days. Payment will be accepted after successful delivery.")
-    else:
-        print("Thank you for using our portal. Hope you buy something from us next time. Have a nice day.")
+    print(f"Customer: {name}")
+    print(f"Email: {email}")
+    print("Items Purchased:")
+    for item in cart:
+        product_name, price, quantity = item
+        cost = price * quantity
+        print(f"{quantity} x {product_name} - ${price} = ${cost}")
+    print(f"Total: ${total_cost}")
+    print(f"Delivery Address: {address}")
+    print("Your items will be delivered in 3 days. Payment will be accepted upon delivery.")
+
 
 def validate_name(name):
     parts = name.split()
     if len(parts) != 2:
         return False
-    for part in parts:
-        if not part.isalpha():
-            return False
-    return True
+    return all(part.isalpha() for part in parts)
+
 
 def validate_email(email):
-    if '@' in email:
-        return True
-    return False
+    return '@' in email and email.strip() != ""
+
 
 def main():
+    cart = []
+
+    # Welcome message
     print("Welcome to the Online Shopping Portal!")
     name = input("Please enter your name: ")
     while not validate_name(name):
@@ -106,21 +116,15 @@ def main():
         print("Invalid email address. Please enter a valid email address.")
         email = input("Please enter your email address: ")
 
-    print("Welcome,", name.split()[0], "!")
+    print(f"Welcome, {name.split()[0]}!")
 
     while True:
         print("\nCategories Available:")
-        display_categories()
-        try:
-            category_choice = int(input("\nEnter the number of the category you would like to explore: "))
-            if category_choice < 1 or category_choice > len(products):
-                print("Invalid category number. Please enter a valid category number.")
-                continue
-        except ValueError:
-            print("Invalid input. Please enter a valid category number.")
+        category_index = display_categories()
+        if category_index is None:
             continue
-
-        selected_category = list(products.keys())[category_choice - 1]
+        
+        selected_category = list(products.keys())[category_index]
         print(f"\nProducts available in '{selected_category}':")
         display_products(products[selected_category])
 
@@ -131,51 +135,40 @@ def main():
             print("3. Go back to the category selection")
             print("4. Finish shopping")
 
-            try:
-                option = int(input("Enter your choice: "))
-                if option < 1 or option > 4:
-                    print("Invalid option. Please enter a valid option number.")
-                    continue
-            except ValueError:
-                print("Invalid input. Please enter a valid option number.")
-                continue
-
-            if option == 1:
+            option = input("Enter your choice: ")
+            if option == "1":
+                product_choice = input("Enter the number corresponding to the product: ")
                 try:
-                    product_choice = int(input("Enter the number corresponding to the product: "))
-                    selected_product = products[selected_category][product_choice - 1]
-                    quantity = int(input("Enter the quantity you want to buy: "))
-                    add_to_cart(cart, selected_product, quantity)
+                    product_index = int(product_choice) - 1
+                    selected_product = products[selected_category][product_index]
+                    quantity = input("Enter the quantity you want to buy: ")
+                    if not quantity.isdigit() or int(quantity) <= 0:
+                        print("Invalid quantity. Please enter a positive number.")
+                        continue
+                    add_to_cart(cart, selected_product, int(quantity))
                     print("Product added to cart.")
                 except (IndexError, ValueError):
-                    print("Invalid input. Please enter valid product and quantity.")
-                    continue
-
-            elif option == 2:
-                try:
-                    sort_order = int(input("Sort by price: 1. Ascending, 2. Descending: "))
-                    if sort_order not in [1, 2]:
-                        print("Invalid sort order. Please enter either 1 or 2.")
-                        continue
-                    print(f"\nProducts sorted by price ({'Ascending' if sort_order == 1 else 'Descending'}):")
-                    display_sorted_products(products[selected_category], sort_order)
-                except ValueError:
-                    print("Invalid input. Please enter either 1 or 2 for sort order.")
-                    continue
-
-            elif option == 3:
+                    print("Invalid product selection. Please try again.")
+            elif option == "2":
+                sort_order = input("Sort by price: 'asc' for ascending, 'desc' for descending: ").strip()
+                if sort_order in ["asc", "desc"]:
+                    sorted_products = display_sorted_products(products[selected_category], sort_order)
+                    display_products(sorted_products)
+                else:
+                    print("Invalid sort order. Please enter 'asc' or 'desc'.")
+            elif option == "3":
                 break  # Go back to category selection
-
-            elif option == 4:
-                print("\nYour Shopping Cart:")
+            elif option == "4":
+                total_cost = sum(item[1] * item[2] for item in cart)
                 display_cart(cart)
                 if cart:
-                    total_cost = sum(item[1] * item[2] for item in cart)
                     address = input("Enter your delivery address: ")
                     generate_receipt(name, email, cart, total_cost, address)
                 else:
-                    generate_receipt(name, email, cart, 0, "")
+                    print("Thank you for using our portal. Hope you buy something next time.")
                 return
+            else:
+                print("Invalid option. Please enter a number from 1 to 4.")
 
 if __name__ == "__main__":
     main()
